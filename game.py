@@ -99,53 +99,37 @@ def load_white_tileset(path):
 class Anim:
 
     def __init__(self, frames, durations, loop=True):
-
         self.frames = frames
-
         self.durations = durations
-
         self.loop = loop
-
         self.time = 0.0
-
         self.index = 0
-
         self.done = False
 
     def reset(self):
-
         self.time = 0.0
-
         self.index = 0
-
         self.done = False
 
     def update(self, dt):
 
         if self.done:
-
             return
 
         self.time += dt
 
         while self.time >= self.durations[self.index]:
-
             self.time -= self.durations[self.index]
-
             self.index += 1
 
             if self.index >= len(self.frames):
 
                 if self.loop:
-
                     self.index = 0
 
                 else:
-
                     self.index = len(self.frames) - 1
-
                     self.done = True
-
                     break
 
     def image(self):
@@ -155,22 +139,14 @@ class Anim:
 class Camera:
 
     def __init__(self, width, height):
-
         self.x = 0.0
-
-        # Fixed vertical framing: ground at world y=192 must remain visible.
         self.y = float(max(0, height - VIEW_H - 22))
-
         self.width = width
-
         self.height = height
 
     def follow(self, rect, dt):
-
         tx = rect.centerx - VIEW_W * 0.42
-
         self.x += (tx - self.x) * min(1.0, dt * 8)
-
         self.x = max(0, min(self.x, self.width - VIEW_W))
 
 class World:
@@ -371,8 +347,6 @@ class World:
 
                     surf.blit(tuft, (x * TILE - int(cam.x), y * TILE - int(cam.y)))
 
-        # Render uninterrupted, opaque earth. The tileset has transparent pixels
-        # that previously left seams when sampled column-by-column.
         ground_color = (236, 236, 232)
         surface_color = (216, 216, 210)
         first = max(0, int(cam.x) - 2)
@@ -694,7 +668,6 @@ class Player:
         self.rect.y = int(round(self.y))
 
     def _move(self, world, dt):
-        # Follow rolling ground naturally, without vertical camera movement.
         was_grounded = self.on_ground
         old_bottom = self.y + self.rect.height
         self.x = max(0.0, min(self.x + self.vx * dt,
@@ -704,7 +677,6 @@ class Player:
         ground = min(world.ground_y_at(self.rect.left + 2),
                      world.ground_y_at(self.rect.right - 2))
         feet = self.rect.bottom
-        # Walk up gradual hills and stay attached while descending.
         if self.vy >= 0 and ((was_grounded and feet >= ground - 6)
                               or (old_bottom <= ground + 8 and feet >= ground)):
             self.y = float(ground - self.rect.height)
@@ -768,12 +740,9 @@ def draw_parallax(surf, layers, cam, world_w):
             x += lw
 
 def draw_hud(surf, player, font):
-    # No health, lives, game-over or victory overlays in peaceful mode.
     hint = font.render("WASD/space move  CLICK atk", True, (200, 200, 200))
     surf.blit(hint, (8, VIEW_H - 14))
 
-
-# Intro dialogue: one panel per click, with no leading asterisk.
 INTRO_DIALOGUE = [
     "the forest of flashbacks. only the bravest may traverse.",
     'luckily for you, the gentleman cam, you are "the strongest...like some kind of leaf vegetable..."',
@@ -883,7 +852,6 @@ def make_dialogue_font(font_path, text_rect, messages, max_size=88, min_size=28)
 
 def draw_intro_dialogue(surf, text, font, frame_surface, frame_rect, inner_rect, text_rect, visible_chars=None):
     """Draw the ornate intro dialogue at full resolution."""
-    # Fill the entire black aperture inside the ornamental frame, without covering its border.
     pygame.draw.rect(surf, (0, 0, 0), inner_rect)
     if frame_surface is not None:
         surf.blit(frame_surface, frame_rect)
@@ -896,7 +864,6 @@ def draw_intro_dialogue(surf, text, font, frame_surface, frame_rect, inner_rect,
     remaining = len(text) if visible_chars is None else visible_chars
     for line in lines:
         portion = line[:max(0, remaining)]
-        # Align to the *complete* line so characters appear left-to-right.
         line_x = text_rect.x + max(0, (text_rect.width - font.size(line)[0]) // 2)
         if portion:
             surf.blit(font.render(portion, True, (255, 255, 255)), (line_x, y))
@@ -920,7 +887,7 @@ class Flashback:
         self.h = self.image.get_height()
         self.rect = pygame.Rect(x, ground_y - self.h, self.w, self.h)
         self.bob_time = 0.0
-        self.state = "idle"  # idle, hit, popup, disintegrating, gone
+        self.state = "idle"  
         self.hit_registered = False
         self.fragments = []
 
@@ -929,7 +896,6 @@ class Flashback:
         scale = target_h / max(1, image.get_height())
         target_w = max(16, int(round(image.get_width() * scale)))
         target_h = max(22, int(round(image.get_height() * scale)))
-        # Collision size is small; the displayed image stays full-window-resolution.
         return pygame.transform.smoothscale(image, (target_w, target_h))
 
     def current_y(self):
@@ -1001,8 +967,6 @@ class Flashback:
                 surf.blit(piece, (int(frag["x"] - cam.x), int(frag["y"] - cam.y)))
             return
 
-        # Idle images are drawn directly onto the full-resolution window by draw_hires().
-
     def draw_hires(self, window, cam):
         if self.state not in ("idle", "hit", "popup"):
             return
@@ -1072,8 +1036,6 @@ def draw_popup(window, image, text, font, sword_image):
         window.blit(img, img.get_rect(center=button.center))
     return button
 
-
-# Sprite sheet row frame counts measured from the supplied transparent sheets.
 MONSTER_SHEETS = {
     "idle": ("monster-Idle.png", 9, 0.12),
     "move": ("monster-Move.png", 10, 0.085),
@@ -1102,15 +1064,10 @@ def sprite_strip(path, count, trim=True):
 
 class Tower:
     def __init__(self, x, world):
-        # Render the source palette exactly; zero-value pixels in the supplied
-        # grayscale sheet are its black background, not solid castle pixels.
-        # PNG is grayscale (mode L); decode to explicit RGBA using Pillow.
-        # This avoids SDL/Pygame palette interpretation that can tint the tower yellow.
         source = Image.open(asset("tower.png")).convert("RGBA")
         raw_frames = []
         for i in range(4):
             frame = source.crop((i * 48, 0, (i + 1) * 48, 80))
-            # The sprite sheet marks its black background as transparent.
             raw_frames.append(
                 pygame.image.fromstring(frame.tobytes(), frame.size, "RGBA").convert_alpha()
             )
@@ -1119,7 +1076,6 @@ class Tower:
         self.world = world
         self.elapsed = 0.0
         self.frame_time = 0.20
-        # Preserve the original aspect ratio; nearest-neighbor for crisp pixels.
         self.size = (64 * SCALE, 106 * SCALE)
         self.scaled = [pygame.transform.scale(f, self.size) for f in self.frames]
 
@@ -1131,7 +1087,6 @@ class Tower:
         ground_screen = round((self.world.ground_y_at(self.x + self.size[0] / (2 * SCALE)) - cam.y) * SCALE)
         bounds = pic.get_bounding_rect(min_alpha=1)
         x = round((self.x - cam.x) * SCALE)
-        # Lower the tower slightly so its visible base sits firmly on the terrain.
         y = ground_screen - bounds.bottom + 6
         window.blit(pic, (x, y))
 
@@ -1153,11 +1108,9 @@ class Monster:
         self.sheets = {}
         for state, (filename, count, delay) in MONSTER_SHEETS.items():
             originals = sprite_strip(filename, count, trim=(state != "death"))
-            # The death sheet contains progressively smaller fragments.
-            # Never resize each fragment to a common height.
             scaled = []
             if state == "death":
-                death_scale = 180 / 58  # constant across ALL death frames
+                death_scale = 180 / 58  
                 for frame in originals:
                     scaled.append(pygame.transform.scale(frame, (
                         max(1, round(frame.get_width() * death_scale)),
@@ -1189,8 +1142,6 @@ class Monster:
     def update(self, dt, player, enabled, can_attack):
         self.hit_cooldown = max(0.0, self.hit_cooldown - dt)
         if self.state == "waiting":
-            # Begin only after memory six is cleared and the knight reaches
-            # the final camera zone (where horizontal scrolling stops).
             end_zone_x = self.world.pixel_w - VIEW_W * 0.58
             if enabled and player.rect.centerx >= end_zone_x - 3:
                 self.set_state("move")
@@ -1257,7 +1208,7 @@ class Monster:
         index = min(len(frames) - 1, int(self.elapsed / delay))
         if self.state in ("idle", "move"):
             index %= len(frames)
-        # The provided artwork faces right; flip it to face the approaching knight.
+       
         img = pygame.transform.flip(frames[index], True, False)
         x = round((self.x - cam.x) * SCALE) - img.get_width() // 2
         ground_screen = round((self.world.ground_y_at(self.x) - cam.y) * SCALE)
@@ -1311,7 +1262,7 @@ def load_kiss_mark(path):
         for x in range(source.size[0]):
             r, g, b, a = src[x, y]
             lum = max(r, g, b)
-            # Preserve anti-aliased edges by using luminance/alpha to drive whiteness.
+            
             alpha = max(a, lum)
             if alpha > 0:
                 dst[x, y] = (255, 255, 255, alpha)
@@ -1330,9 +1281,6 @@ def draw_speaker_dialogue(surf, text, font, frame_surface, frame_rect, inner_rec
     else:
         pygame.draw.rect(surf, (255, 255, 255), frame_rect, 8)
 
-    # Keep the portrait comfortably inside the ornate frame and leave generous
-    # margins so the text never spills onto the border art.
-    # Square portrait frame, centered vertically within the ornate dialogue box.
     portrait_size = min(140, inner_rect.height - 48)
     portrait_box = pygame.Rect(inner_rect.x + 26, 0, portrait_size, portrait_size)
     portrait_box.centery = inner_rect.centery
@@ -1360,7 +1308,6 @@ def draw_speaker_dialogue(surf, text, font, frame_surface, frame_rect, inner_rec
     remaining = len(text) if visible_chars is None else visible_chars
     for line in lines:
         portion = line[:max(0, remaining)]
-        # Left-align for cleaner reading and reliable padding inside the frame.
         line_x = speaker_text_rect.x
         if portion:
             surf.blit(font.render(portion, True, (255, 255, 255)), (line_x, y))
@@ -1384,6 +1331,55 @@ def draw_kiss_overlay(window, kiss_image, alpha):
     pic = pic.copy()
     pic.set_alpha(alpha)
     window.blit(pic, pic.get_rect(center=window.get_rect().center))
+
+END_TEXT = (
+    "dear cameron, \n thank you for giving me the world. i love you so much, more than words can say, and i can't wait to spend the future with you. in this past year with you, i have felt more loved and understood than i ever believed possible. when i'm with you, i feel like things are worth doing, and everything feels brand new and perfect. when you put your hands on me, i'm amazed by how tenderly you treat me. i feel beautiful and fragile and precious like a porcelain doll. thank you for always being so patient and caring with me even in my most stressful times. you are truly unlike anyone, so brilliant and full of beauty, and i hope i can return the joy you have given me every day a hundredfold. never would i have thought that this would be the way it turned out for us when we met, but i'm so glad that the invisible string of love tied you to me.\n love,\n\tclare"
+)
+
+def draw_end_card(window, title_font, body_font, hint_font, heart_image, scroll_offset):
+    """Full-resolution Tangerine ending, with transparent scrolling text inside the heart."""
+    window.fill((0, 0, 0))
+    ww, wh = window.get_size()
+    title = title_font.render("The End", True, (255, 255, 255))
+    title_rect = title.get_rect(center=(ww // 2, 65))
+    window.blit(title, title_rect)
+    heart_top = title_rect.bottom + round(title_font.get_linesize() * 0.25)
+
+    if heart_image is not None:
+        max_w, max_h = ww * 0.74, wh * 0.67
+        scale = min(max_w / heart_image.get_width(), max_h / heart_image.get_height())
+        heart = pygame.transform.smoothscale(
+            heart_image,
+            (max(1, round(heart_image.get_width() * scale)),
+             max(1, round(heart_image.get_height() * scale)))
+        )
+        heart_rect = heart.get_rect(midtop=(ww // 2, heart_top))
+        window.blit(heart, heart_rect)
+    else:
+        heart_rect = pygame.Rect(0, 0, 500, 500)
+        heart_rect.midtop = (ww // 2, heart_top)
+
+    clip_rect = pygame.Rect(0, 0,
+                            round(heart_rect.width * 0.53),
+                            round(heart_rect.height * 0.37))
+    clip_rect.center = (heart_rect.centerx, heart_rect.centery - round(heart_rect.height * 0.02))
+    lines = wrap_dialogue(END_TEXT, body_font, clip_rect.width)
+    line_h = body_font.get_linesize()
+    content_h = len(lines) * line_h
+    max_scroll = max(0, content_h - clip_rect.height)
+    scroll_offset = max(0, min(scroll_offset, max_scroll))
+
+    old_clip = window.get_clip()
+    window.set_clip(clip_rect)
+    y = clip_rect.y - scroll_offset
+    for line in lines:
+        window.blit(body_font.render(line, True, (255, 255, 255)), (clip_rect.x, y))
+        y += line_h
+    window.set_clip(old_clip)
+
+    hint = hint_font.render("Scroll to read", True, (235, 235, 235))
+    window.blit(hint, hint.get_rect(center=(ww // 2, heart_rect.bottom + 22)))
+    return max_scroll
 
 
 def main():
@@ -1412,6 +1408,7 @@ def main():
     sword_image = load_image(asset("sword.png")) if os.path.isfile(asset("sword.png")) else None
     princess_image = load_black_to_alpha(asset("princess.png")) if os.path.isfile(asset("princess.png")) else None
     kiss_image = load_kiss_mark(asset("kiss.png")) if os.path.isfile(asset("kiss.png")) else None
+    heartcard_image = load_image(asset("heartcard.png")) if os.path.isfile(asset("heartcard.png")) else None
     FLASHBACK_TUTORIAL = (
         "hark! a flashback! in order to advance, attack the flashbacks! "
         "this will liberate these memories from this dark place of dwelling."
@@ -1475,16 +1472,29 @@ def main():
                                    [BOSS_WARNING], max_size=70, min_size=24)
     princess_font = make_dialogue_font(load_dialogue_font(), dialogue_text_rect,
                                        PRINCESS_DIALOGUE, max_size=62, min_size=24)
+    end_font_path = load_dialogue_font()
+    end_title_font = (pygame.font.Font(end_font_path, 88) if end_font_path
+                      else pygame.font.SysFont("georgia", 62))
+    # The scrolling message uses Beau Rivage; the title and hint use Tangerine.
+    beau_font_path = next((asset(name) for name in (
+        "BeauRivage-Regular.ttf", "Beau Rivage Regular.ttf",
+        "BeauRivage.ttf", "Beau Rivage.ttf", "beaurivage-regular.ttf"
+    ) if os.path.isfile(asset(name))), None)
+    if beau_font_path is None:
+        beau_font_path = pygame.font.match_font("beau rivage")
+    end_body_font = (pygame.font.Font(beau_font_path, 30) if beau_font_path
+                     else pygame.font.SysFont("georgia", 23))
+    end_hint_font = (pygame.font.Font(end_font_path, 28) if end_font_path
+                     else pygame.font.SysFont("georgia", 16))
     flashback_images = load_flashback_images()
     flashbacks = create_flashbacks(flashback_images, world)
-    # Bring the final boss encounter much closer to memory 6.
+   
     last_memory_x = flashbacks[-1].base_x if flashbacks else 4640
     tower = Tower(min(world.pixel_w - 140, last_memory_x + 520), world)
-    # The tower marks the end of the walkable world.
+    
     world.pixel_w = round(tower.x + tower.size[0] / SCALE)
     camera.width = world.pixel_w
-    # Spawn beyond the right edge of the screen, behind the tower,
-    # and walk left until the monster stands in front of it.
+   
     monster_target_x = tower.x - 52
     monster_spawn_x = world.pixel_w + 35
     monster = Monster(monster_spawn_x, monster_target_x, world)
@@ -1492,7 +1502,7 @@ def main():
     active_popup_index = None
     sword_button_rect = None
 
-    dialogue_index = 0  # 0..3: intro panels; 4: normal gameplay
+    dialogue_index = 0  
     tutorial_seen = False
     tutorial_open = False
     dialogue_reveal = 0.0
@@ -1504,6 +1514,11 @@ def main():
     princess_done = False
     kiss_active = False
     kiss_timer = 0.0
+    ending_fade = False
+    end_screen = False
+    fade_alpha = 0.0
+    end_scroll = 0
+    end_scroll_max = 0
     LETTERS_PER_SECOND = 44
 
     running = True
@@ -1549,12 +1564,18 @@ def main():
                         else:
                             princess_index += 1
                             princess_reveal = 0.0
+                elif princess_done and not ending_fade and not end_screen:
+                    ending_fade = True
+                    fade_alpha = 0.0
                 elif active_popup_index is not None and sword_button_rect and sword_button_rect.collidepoint(event.pos):
                     flashbacks[active_popup_index].start_disintegration()
                     active_popup_index = None
                     sword_button_rect = None
                 elif active_popup_index is None:
                     attack_clicked = True
+
+            if event.type == pygame.MOUSEWHEEL and end_screen:
+                end_scroll = max(0, min(end_scroll_max, end_scroll - event.y * 24))
 
             if event.type == pygame.QUIT:
 
@@ -1564,7 +1585,7 @@ def main():
 
                 running = False
 
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_r and dialogue_index >= len(INTRO_DIALOGUE) and active_popup_index is None and not princess_open and not kiss_active:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_r and dialogue_index >= len(INTRO_DIALOGUE) and active_popup_index is None and not princess_open and not kiss_active and not princess_done and not ending_fade and not end_screen:
 
                 player.respawn()
 
@@ -1577,7 +1598,7 @@ def main():
             current_flashback = flashbacks[current_flashback_index]
 
         if dialogue_index >= len(INTRO_DIALOGUE):
-            if active_popup_index is None and not tutorial_open and not boss_warning_open and not princess_open and not kiss_active:
+            if active_popup_index is None and not tutorial_open and not boss_warning_open and not princess_open and not kiss_active and not princess_done and not ending_fade and not end_screen:
                 player.update(dt, keys, world, world.enemies, attack_clicked)
             else:
                 # keep ongoing attack animations tidy before the popup is acted on
@@ -1617,10 +1638,9 @@ def main():
                 princess_open = True
                 princess_index = 0
                 princess_reveal = 0.0
-            if not boss_warning_open and active_popup_index is None and not princess_open and not kiss_active:
+            if not boss_warning_open and active_popup_index is None and not princess_open and not kiss_active and not princess_done and not ending_fade and not end_screen:
                 monster.register_player_attack(player)
-            # No invisible wall at the destination during the approach.
-            # The knight can walk/jump freely until touching the actual monster.
+           
             wall = monster.barrier
             if wall and player.rect.colliderect(wall):
                 if player.rect.centerx < wall.centerx:
@@ -1639,8 +1659,6 @@ def main():
 
         for flashback in flashbacks:
             flashback.draw(view, camera)
-
-        # The knight is drawn at full display resolution after scaling the world.
 
         if dialogue_index >= len(INTRO_DIALOGUE):
             draw_hud(view, player, font)
@@ -1663,10 +1681,16 @@ def main():
                 princess_open = True
                 princess_index = 2
                 princess_reveal = 0.0
+
+        if ending_fade:
+            fade_alpha = min(255.0, fade_alpha + dt * 255 / 0.9)
+            if fade_alpha >= 255.0:
+                ending_fade = False
+                end_screen = True
+                end_scroll = 0
         for flashback in flashbacks:
             flashback.draw_hires(window, camera)
-        # Cover the monster with the tower while it emerges from behind it.
-        # Once the monster moves in front (left of the tower), it renders on top.
+       
         if monster.x >= tower.x:
             monster.draw(window, camera)
             tower.draw(window, camera)
@@ -1678,48 +1702,56 @@ def main():
             alpha = 255 if kiss_timer < 0.55 else max(0, round(255 * (1.0 - (kiss_timer - 0.55) / 0.45)))
             draw_kiss_overlay(window, kiss_image, alpha)
 
-        # Draw overlays only after scaling; the game itself stays crisp pixel art.
         sword_button_rect = None
-        if dialogue_index < len(INTRO_DIALOGUE):
-            draw_intro_dialogue(
-                window,
-                INTRO_DIALOGUE[dialogue_index],
-                dialogue_font,
-                dialogue_frame_surface,
-                dialogue_panel,
-                dialogue_inner_rect,
-                dialogue_text_rect,
-                int(dialogue_reveal),
-            )
-        elif tutorial_open:
-            draw_intro_dialogue(
-                window, FLASHBACK_TUTORIAL, tutorial_font,
-                dialogue_frame_surface, dialogue_panel,
-                dialogue_inner_rect, dialogue_text_rect,
-                int(tutorial_reveal),
-            )
-        elif boss_warning_open:
-            draw_intro_dialogue(
-                window, BOSS_WARNING, boss_font,
-                dialogue_frame_surface, dialogue_panel,
-                dialogue_inner_rect, dialogue_text_rect,
-                int(boss_reveal),
-            )
-        elif princess_open:
-            draw_speaker_dialogue(
-                window, PRINCESS_DIALOGUE[princess_index], princess_font,
-                dialogue_frame_surface, dialogue_panel,
-                dialogue_inner_rect, dialogue_text_rect,
-                princess_image, int(princess_reveal),
-            )
-        elif active_popup_index is not None:
-            sword_button_rect = draw_popup(
-                window,
-                flashbacks[active_popup_index].original_image,
-                flashbacks[active_popup_index].description,
-                popup_body_font,
-                sword_image,
-            )
+        if end_screen:
+            end_scroll_max = draw_end_card(window, end_title_font, end_body_font, end_hint_font, heartcard_image, end_scroll)
+            end_scroll = max(0, min(end_scroll, end_scroll_max))
+        else:
+            if dialogue_index < len(INTRO_DIALOGUE):
+                draw_intro_dialogue(
+                    window,
+                    INTRO_DIALOGUE[dialogue_index],
+                    dialogue_font,
+                    dialogue_frame_surface,
+                    dialogue_panel,
+                    dialogue_inner_rect,
+                    dialogue_text_rect,
+                    int(dialogue_reveal),
+                )
+            elif tutorial_open:
+                draw_intro_dialogue(
+                    window, FLASHBACK_TUTORIAL, tutorial_font,
+                    dialogue_frame_surface, dialogue_panel,
+                    dialogue_inner_rect, dialogue_text_rect,
+                    int(tutorial_reveal),
+                )
+            elif boss_warning_open:
+                draw_intro_dialogue(
+                    window, BOSS_WARNING, boss_font,
+                    dialogue_frame_surface, dialogue_panel,
+                    dialogue_inner_rect, dialogue_text_rect,
+                    int(boss_reveal),
+                )
+            elif princess_open:
+                draw_speaker_dialogue(
+                    window, PRINCESS_DIALOGUE[princess_index], princess_font,
+                    dialogue_frame_surface, dialogue_panel,
+                    dialogue_inner_rect, dialogue_text_rect,
+                    princess_image, int(princess_reveal),
+                )
+            elif active_popup_index is not None:
+                sword_button_rect = draw_popup(
+                    window,
+                    flashbacks[active_popup_index].original_image,
+                    flashbacks[active_popup_index].description,
+                    popup_body_font,
+                    sword_image,
+                )
+
+        if ending_fade:
+            fade = pygame.Surface(window.get_size(), pygame.SRCALPHA)
+            fade.fill((0, 0, 0, round(fade_alpha)))
+            window.blit(fade, (0, 0))
 
         pygame.display.flip()
 
