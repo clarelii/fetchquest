@@ -1482,7 +1482,7 @@ def main():
     ) if os.path.isfile(asset(name))), None)
     if beau_font_path is None:
         beau_font_path = pygame.font.match_font("beau rivage")
-    end_body_font = (pygame.font.Font(beau_font_path, 30) if beau_font_path
+    end_body_font = (pygame.font.Font(beau_font_path, 25) if beau_font_path
                      else pygame.font.SysFont("georgia", 23))
     end_hint_font = (pygame.font.Font(end_font_path, 28) if end_font_path
                      else pygame.font.SysFont("georgia", 16))
